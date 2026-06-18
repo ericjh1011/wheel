@@ -42,16 +42,14 @@
             height: 100%;
             border-radius: 50%;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            /* 회전 애니메이션 속도 및 부드러움 조절 */
             transition: transform 4s cubic-bezier(0.2, 0.8, 0.3, 1);
         }
         
-        /* 💡 버튼 영역에 포지션 기준 설정 */
+        /* 버튼과 비밀 영역을 묶어주는 기준 박스 */
         .btn-container {
             position: relative;
             margin-top: 30px;
-            display: flex;
-            align-items: center;
+            display: inline-block;
         }
         
         button {
@@ -67,17 +65,17 @@
         }
         button:active { transform: scale(0.98); }
         
-        /* 💥 비밀 조작 버튼: [돌리기!] 버튼 바로 오른쪽에 투명하게 배치 */
+        /* 💥 비밀 조작 버튼: 이제 완벽하게 투명합니다. */
         .secret-trigger {
             position: absolute;
-            width: 70px; /* 터치하기 넉넉하게 */
-            height: 48px; /* 버튼 높이와 비슷하게 */
+            width: 80px;         
+            height: 48px;        
             top: 0;
-            right: -75px; /* 버튼 오른쪽 빈 공간 */
-            background: transparent;
+            right: -85px;        /* [돌리기!] 버튼 바로 오른쪽 빈 공간 */
             z-index: 999;
-            /* 테스트 시 위치 확인용: 아래 border 주석 해제 */
-            /* border: 2px solid red; */
+            background: transparent; /* 🔒 투명하게 변경 */
+            border: none;             /* 🔒 테두리 삭제 */
+            cursor: default;          /* 마우스가 올라가도 커서 모양이 변하지 않음 */
         }
     </style>
 </head>
@@ -99,12 +97,12 @@
         const canvas = document.getElementById('wheel');
         const ctx = canvas.getContext('2d');
         
-        // 대상: 임채홍 (0번째 인덱스)
+        // 대상: 임채홍 (0번째 고정)
         const items = ["임채홍", "이채성", "이학기", "이상훈", "전신우", "안재범", "정태진", "김응태"];
         const colors = ["#ff6b6b", "#feca57", "#ffffb2", "#1dd1a1", "#f5f6fa", "#54a0ff", "#ff7f50", "#7bed9f"];
         
         const numSegments = items.length;
-        const segmentAngle = 360 / numSegments; // 한 칸당 각도 (여기서는 45도)
+        const segmentAngle = 360 / numSegments; 
         let currentRotation = 0;
         let isRigged = false; 
 
@@ -134,7 +132,7 @@
             }
         }
 
-        // 비밀 영역 클릭 시 작동 (콘솔 로그 기록)
+        // 조작 모드 활성화 (콘솔 로그 기록만 남음)
         function setRigged() {
             isRigged = true;
             console.log("🔒 조작 모드 활성화: 다음 결과는 무조건 [임채홍]");
@@ -144,39 +142,28 @@
             let targetAngle = 0;
 
             if (isRigged) {
-                // 조작 모드 로직 (자연스러운 랜덤 멈춤 추가)
-                const targetSegment = 0; // 임채홍
-                
-                // 1. 임채홍 칸의 정중앙 각도 계산 (12시 방향 바늘 기준)
+                const targetSegment = 0; 
                 const centerAngle = 270 - (targetSegment * segmentAngle) - (segmentAngle / 2);
                 
-                // 2. ✨ 자연스러움을 위한 랜덤 오프셋(Offset) 추가
-                // 한 칸(45도)의 중앙에서 ±15도 사이의 랜덤한 각도를 생성
-                const randomOffset = (Math.random() - 0.5) * 30; // -15 ~ +15 사이의 랜덤 값
-                
-                // 3. 중앙 각도에 랜덤 오프셋을 더함 (임채홍 칸 내부에서 살짝 비껴나감)
+                // ±14도 사이 자연스러운 랜덤 오프셋
+                const randomOffset = (Math.random() - 0.5) * 28; 
                 const desiredAngle = centerAngle + randomOffset;
                 
-                // 최소 5바퀴 이상 회전 후 해당 각도로 부드럽게 감속
                 targetAngle = currentRotation + 1800 + (desiredAngle - (currentRotation % 360));
-                
-                isRigged = false; // 일회성 조작 해제
-                console.log(`🎯 [조작] 임채홍 칸 내부의 ${desiredAngle.toFixed(1)}도 지점으로 멈춤 설정`);
+                isRigged = false; 
+                console.log(`🎯 [조작 실행] 임채홍 내부 각도 ${desiredAngle.toFixed(1)}도 지점에 안착 예정`);
             } else {
-                // 일반 모드: 완전 랜덤
                 targetAngle = currentRotation + 1800 + Math.random() * 360;
             }
 
             currentRotation = targetAngle;
             canvas.style.transform = `rotate(${currentRotation}deg)`;
             
-            // 결과 확인 (4초 후)
             setTimeout(() => {
-                // 현재 멈춘 각도 기반 실제 당첨 아이템 재계산 (바늘 기준)
                 const actualAngle = (360 - (currentRotation % 360) + 270) % 360;
                 const winningIndex = Math.floor(actualAngle / segmentAngle) % numSegments;
                 alert(`다음 발표자는 🎉 [${items[winningIndex]}] 님입니다! 🎉`);
-            }, 4000); // 4초 애니메이션과 동일하게
+            }, 4000);
         }
 
         drawWheel();
