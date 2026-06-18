@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>룰렛 돌리기!</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+            user-select: none; /* 드래그 방지 */
+        }
+        
+        /* 💡 타이틀 영역 내부에 비밀 트리거를 심기 위해 포지션 기준 설정 */
+        .title-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        h1 { color: #333; margin: 0; }
+        
+        /* 💥 비밀 조작 버튼: '발표자' 글자 오른쪽 빈 공간에 투명하게 배치 */
+        .secret-trigger {
+            position: absolute;
+            width: 60px;
+            height: 40px;
+            top: 0;
+            right: -60px;
+            background: transparent;
+            z-index: 999;
+            /* 테스트할 때 위치를 보려면 아래 border 주석을 해제해 보세요 */
+            /* border: 1px solid red; */ 
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+        }
+        /* 룰렛 바늘 */
+        .arrow {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #ff4757;
+            z-index: 10;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .btn-container {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+    <div class="title-container">
+        <h1>다음 Compliance Committee 발표자</h1>
+        <div class="secret-trigger" onclick="setRigged()"></div>
+    </div>
+    
+    <div class="wheel-container">
+        <div class="arrow"></div>
+        <canvas id="wheel" width="350" height="350"></canvas>
+    </div>
+
+    <div class="btn-container">
+        <button onclick="spinWheel()">돌리기!</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        
+        // 임채홍 님이 0번째 인덱스 고정
+        const items = ["임채홍", "이채성", "이학기", "이상훈", "전신우", "안재범", "정태진", "김응태"];
+        const colors = ["#ff6b6b", "#feca57", "#ffffb2", "#1dd1a1", "#f5f6fa", "#54a0ff", "#ff7f50", "#7bed9f"];
+        
+        const numSegments = items.length;
+        const segmentAngle = 360 / numSegments;
+        let currentRotation = 0;
+        let isRigged = false; 
+
+        function drawWheel() {
+            const radius = canvas.width / 2;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            for (let i = 0; i < numSegments; i++) {
+                const startAngle = (i * segmentAngle * Math.PI) / 180;
+                const endAngle = ((i + 1) * segmentAngle * Math.PI) / 180;
+                
+                ctx.beginPath();
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius, startAngle, endAngle);
+                ctx.fillStyle = colors[i];
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.save();
+                ctx.translate(radius, radius);
+                ctx.rotate(startAngle + (segmentAngle * Math.PI) / 360);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#333";
+                ctx.font = "bold 15px Malgun Gothic";
+                ctx.fillText(items[i], radius - 20, 10);
+                ctx.restore();
+            }
+        }
+
+        // 비밀 영역 클릭 시 작동 (콘솔로그로만 확인 가능하게 변경)
+        function setRigged() {
+            isRigged = true;
+            console.log("🔒 조작 모드 활성화: 다음 결과는 무조건 [임채홍]");
+        }
+
+        function spinWheel() {
+            let targetAngle = 0;
+
+            if (isRigged) {
+                const targetSegment = 0; // 임채홍
+                const desiredAngle = 270 - (targetSegment * segmentAngle) - (segmentAngle / 2);
+                
+                // 자연스러운 회전을 위해 기존 각도에 누적하여 5바퀴 이상 회전
+                targetAngle = currentRotation + 1800 + (desiredAngle - (currentRotation % 360));
+                isRigged = false; // 일회성 조작 해제
+            } else {
+                targetAngle = currentRotation + 1800 + Math.random() * 360;
+            }
+
+            currentRotation = targetAngle;
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+            
+            setTimeout(() => {
+                const actualAngle = (360 - (currentRotation % 360) + 270) % 360;
+                const winningIndex = Math.floor(actualAngle / segmentAngle) % numSegments;
+                alert(`다음 발표자는 🎉 [${items[winningIndex]}] 님입니다! 🎉`);
+            }, 4000);
+        }
+
+        drawWheel();
+    </script>
+</body>
+</html>
